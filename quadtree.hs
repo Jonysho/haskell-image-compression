@@ -1,3 +1,5 @@
+module Quadtree where
+
 -- Define quadtree with black, white node or node with 4 children
 data Quadtree where
   Black :: Quadtree
@@ -117,6 +119,3 @@ blurLeaf node _ = node
 -- Returns the count of a specific color in a list of Quadtree
 count :: Quadtree -> [Quadtree] -> Int
 count color = length . filter (== color) -- Count the number of colors in the list
-
-main :: IO ()
-main = do
