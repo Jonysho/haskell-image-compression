@@ -1,0 +1,8 @@
+JuicyPixels: image encoding/decoding and manipulation
+Formats: PNG, JPEG, BMP, GIF, TIFF...
+Pixel Types: RGB, RGBA, grayscale, etc.
+Operations: Reading, writing, and basic image manipulation
+
+running:
+cabal update
+cabal install --only-dependencies

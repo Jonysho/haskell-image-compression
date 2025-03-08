@@ -1,6 +1,6 @@
 module QuadtreeTests where
 
-import Quadtree
+import Base
 
 -- Test cases
 test :: Quadtree -> Quadtree -> Bool

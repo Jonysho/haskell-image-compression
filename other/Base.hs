@@ -1,4 +1,4 @@
-module Quadtree where
+module Base where
 
 -- Define quadtree with black, white node or node with 4 children
 data Quadtree where

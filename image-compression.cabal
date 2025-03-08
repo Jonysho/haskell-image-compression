@@ -1,0 +1,20 @@
+cabal-version:      3.4
+
+name:               image-compression
+version:            0.1.0.0
+author:             jonysho
+maintainer:         jonathanysho@gmail.com
+build-type:         Simple
+
+common warnings
+    ghc-options: -Wall
+
+executable image-compression
+    import:           warnings
+    main-is:          Main.hs
+    hs-source-dirs:   app, src
+    build-depends: base, JuicyPixels, bytestring, filepath
+    other-modules:       Types, Quadtree, ImageProcessing
+    default-language: Haskell2010
+
+
