@@ -27,15 +27,9 @@ This project compresses images using a **Quadtree** algorithm, reducing file siz
    - The compressed image is saved as a new PNG file (e.g., `car-compressed.png`).
 ---
 
-## Example
-
-### Original Image (`car.png`)
-![Original Image](car.png)  
-**Size**: 423 KB
-
-### Compressed Image (`car-compressed.png`)
-![Compressed Image](car-compressed.png)  
-**Size**: 133 KB
+| Original Image (`car.png`) | Compressed Image (`car-compressed.png`) |
+|---------------------------|----------------------------------|
+| ![Original Image](car.png) **(423 KB)** | ![Compressed Image](car-compressed.png) **(133 KB)** |
 
 ---
 
