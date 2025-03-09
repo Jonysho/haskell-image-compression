@@ -6,3 +6,4 @@ Operations: Reading, writing, and basic image manipulation
 running:
 cabal update
 cabal install --only-dependencies
+cabal run image-compression -- <image> <threshold> <max_depth>

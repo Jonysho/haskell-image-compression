@@ -1,52 +1,80 @@
 module Quadtree (
     buildQuadtree,
     isUniform,
-    splitQuadrants
+    getRegionPixels
 ) where
 
 import Types
-import Data.List (transpose)
+import qualified Data.Vector as V
+import Data.Word (Word8)
 
--- Calculate average color and standard deviation for a region
-regionProperties :: [[RGB]] -> (RGB, Double)
+-- Get pixels for a specific region from the Vector
+getRegionPixels :: V.Vector RGB -> BBox -> Int -> V.Vector RGB
+getRegionPixels allPixels (x, y, w, h) fullWidth =
+  V.generate (w * h) (\i ->
+      let px = x + i `mod` w
+          py = y + i `div` w
+          idx = py * fullWidth + px
+      in if idx < V.length allPixels
+         then allPixels V.! idx
+         else (0, 0, 0)  -- Fallback for out-of-bounds, though should not occur
+  )
+
+-- Calculate average color and variance for a region
+regionProperties :: V.Vector RGB -> (RGB, Double)
 regionProperties pixels =
-  let (rs, gs, bs) = unzip3 (concat pixels)
-      len = fromIntegral (length rs)
-      avg xs = fromIntegral (sum (map fromIntegral xs)) `div` len
-      avgColor = (avg rs, avg gs, avg bs)
-      stdDev = sqrt (sum [colorDistance avgColor px | px <- concat pixels] / fromIntegral len)
-  in (avgColor, stdDev)
+  let pixelCount = V.length pixels
+      (sumR, sumG, sumB) = V.foldr' (\(r, g, b) (sr, sg, sb) -> 
+                             (sr + fromIntegral r, 
+                              sg + fromIntegral g, 
+                              sb + fromIntegral b)) 
+                           (0, 0, 0) pixels
+                           
+      avgR = round (sumR / fromIntegral pixelCount) :: Word8
+      avgG = round (sumG / fromIntegral pixelCount) :: Word8
+      avgB = round (sumB / fromIntegral pixelCount) :: Word8
+      avgColor = (avgR, avgG, avgB)
+      
+      -- Calculate variance as average squared distance (without sqrt for efficiency)
+      variance = V.foldl' (\acc px -> acc + colorDistanceSquared avgColor px) 0 pixels 
+                 / fromIntegral pixelCount
+  in (avgColor, variance)
 
--- Check if a region is uniform
-isUniform :: [[RGB]] -> Double -> Bool
+-- Squared distance between two colors for variance calculation
+colorDistanceSquared :: RGB -> RGB -> Double
+colorDistanceSquared (r1, g1, b1) (r2, g2, b2) =
+  let dr = fromIntegral r1 - fromIntegral r2
+      dg = fromIntegral g1 - fromIntegral g2
+      db = fromIntegral b1 - fromIntegral b2
+  in dr*dr + dg*dg + db*db
+
+-- Check uniformity using squared variance to avoid sqrt
+isUniform :: V.Vector RGB -> Double -> Bool
 isUniform pixels threshold =
-  let (_, stdDev) = regionProperties pixels
-  in stdDev <= threshold
+  let (_, variance) = regionProperties pixels
+  in variance <= threshold || V.length pixels <= 1
 
--- Split a region into 4 quadrants
-splitQuadrants :: [[RGB]] -> ([[RGB]], [[RGB]], [[RGB]], [[RGB]])
-splitQuadrants pixels =
-  let rows = length pixels
-      cols = length (head pixels)
-      (top, bottom) = splitAt (rows `div` 2) pixels
-      splitRow row = splitAt (cols `div` 2) row
-      (tl, tr) = unzip (map splitRow top)
-      (bl, br) = unzip (map splitRow bottom)
-  in (tl, tr, bl, br)
-
--- Build the quadtree
-buildQuadtree :: [[RGB]] -> BBox -> Double -> Int -> Quadtree
-buildQuadtree pixels (x, y, w, h) threshold depth
-  | isUniform pixels threshold || depth >= maxDepth = Leaf (x, y, w, h) avgColor
+-- Update buildQuadtree to use Vector
+buildQuadtree :: V.Vector RGB -> Int -> BBox -> Double -> Int -> Int -> Quadtree
+buildQuadtree allPixels fullWidth (x, y, w, h) threshold maxDepth currentDepth
+  | currentDepth >= maxDepth || w <= 1 || h <= 1 || isUniform regionPixels threshold =
+      Leaf (x, y, w, h) avgColor
   | otherwise =
-      let (tl, tr, bl, br) = splitQuadrants pixels
-          halfW = w `div` 2
-          halfH = h `div` 2
-      in Node (x, y, w, h)
-              (buildQuadtree tl (x, y, halfW, halfH) threshold (depth + 1))
-              (buildQuadtree tr (x + halfW, y, halfW, halfH) threshold (depth + 1))
-              (buildQuadtree bl (x, y + halfH, halfW, halfH) threshold (depth + 1))
-              (buildQuadtree br (x + halfW, y + halfH, halfW, halfH) threshold (depth + 1))
+      let halfW = max 1 (w `div` 2)
+          halfH = max 1 (h `div` 2)
+          remW = w - halfW
+          remH = h - halfH
+          
+          tlBBox = (x, y, halfW, halfH)
+          trBBox = (x + halfW, y, remW, halfH)
+          blBBox = (x, y + halfH, halfW, remH)
+          brBBox = (x + halfW, y + halfH, remW, remH)
+          
+          tl = buildQuadtree allPixels fullWidth tlBBox threshold maxDepth (currentDepth + 1)
+          tr = buildQuadtree allPixels fullWidth trBBox threshold maxDepth (currentDepth + 1)
+          bl = buildQuadtree allPixels fullWidth blBBox threshold maxDepth (currentDepth + 1)
+          br = buildQuadtree allPixels fullWidth brBBox threshold maxDepth (currentDepth + 1)
+      in Node (x, y, w, h) tl tr bl br
   where
-    (avgColor, _) = regionProperties pixels
-    maxDepth = 8  -- Arbitrary limit to prevent infinite recursion
+    regionPixels = getRegionPixels allPixels (x, y, w, h) fullWidth
+    (avgColor, _) = regionProperties regionPixels

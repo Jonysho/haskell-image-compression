@@ -17,4 +17,7 @@ data Quadtree
 -- Euclidean distance between two colors
 colorDistance :: RGB -> RGB -> Double
 colorDistance (r1, g1, b1) (r2, g2, b2) =
-  sqrt $ fromIntegral (fromIntegral (r1 - r2)^2 + fromIntegral (g1 - g2)^2 + fromIntegral (b1 - b2)^2)
+  let r = fromIntegral r1 - fromIntegral r2
+      g = fromIntegral g1 - fromIntegral g2
+      b = fromIntegral b1 - fromIntegral b2
+  in sqrt (r*r + g*g + b*b)
