@@ -40,7 +40,7 @@ regionProperties pixels =
                  / fromIntegral pixelCount
   in (avgColor, variance)
 
--- Squared distance between two colors for variance calculation
+-- Squared distance between two colors for variance calculation (Euclidean)
 colorDistanceSquared :: RGB -> RGB -> Double
 colorDistanceSquared (r1, g1, b1) (r2, g2, b2) =
   let dr = fromIntegral r1 - fromIntegral r2
